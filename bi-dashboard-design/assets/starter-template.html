@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="blue">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wyexin BI Starter Template</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+<style>
+/* ============ Design Tokens(与 references/design-tokens.md 同源) ============ */
+:root{
+  --canvas:#F7F8FA; --card:#FFFFFF; --hairline:#E9EDF3; --grid-line:#EEF1F6;
+  --text-1:#1D2129; --text-2:#4E5969; --text-3:#86909C; --text-disabled:#C9CDD4;
+  --up:#18A058; --down:#E64C45; --rate-line:#E64C45; --time-marker:#E64C45;
+  --target-1:#F5B1A8; --target-2:#F08A7E;
+  --lastyear-1:#D6DAE1; --lastyear-2:#9CA3AF; --yoy-line:#6B7280;
+  --font:"PingFang SC","Microsoft YaHei","HarmonyOS Sans SC",system-ui,sans-serif;
+}
+[data-theme="blue"]{ --primary:#3370EB; --primary-soft:#B9D3FA; --secondary:#A5B8E8; --accent-warm:#F59A3C; --accent-warm-soft:#FBD3A2; --tint:#EAF2FB; }
+[data-theme="teal"]{ --primary:#21968F; --primary-soft:#A6DCC3; --secondary:#52B78A; --accent-warm:#F5A54A; --accent-warm-soft:#FBDDB4; --tint:#E6F4F2; }
+[data-theme="navy"]{ --primary:#2E4180; --primary-soft:#B4C2EE; --secondary:#5B7CE6; --accent-warm:#F2A8A0; --accent-warm-soft:#FBDCD8; --tint:#ECEFF9; }
+[data-theme="pop"] { --primary:#E8188C; --primary-soft:#F9BBDD; --secondary:#00AEEF; --accent-warm:#FFC53D; --accent-warm-soft:#FFE8B0; --tint:#FDEEF6; }
+/* 自定义主题:用户有品牌色/背景需求时按 design-tokens.md §2.5 推导,复制此行填值即可
+[data-theme="custom"]{ --primary:?; --primary-soft:主色30:70混白; --secondary:邻近色; --accent-warm:互补暖色; --accent-warm-soft:?; --tint:主色10%铺白; } */
+
+/* ============ 基础 ============ */
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--canvas);font-family:var(--font);color:var(--text-2);font-size:12px;
+  font-variant-numeric:tabular-nums}
+.page{max-width:1888px;margin:0 auto;padding:16px}
+
+/* ============ 页头药丸 ============ */
+.page-header{display:flex;align-items:center;gap:16px;margin-bottom:12px}
+.logo{font-weight:700;color:var(--primary);font-size:14px;letter-spacing:.1em;white-space:nowrap}
+.title-pill{flex:1;display:flex;justify-content:center}
+.title-pill .pill{position:relative;padding:10px 56px;border-radius:999px;
+  background:linear-gradient(180deg,#FFFFFF,#F0F4FA);box-shadow:0 2px 10px rgba(29,33,41,.06);
+  font-size:21px;font-weight:700;letter-spacing:.35em;color:var(--text-1);text-indent:.35em}
+.header-filters{display:flex;gap:8px;white-space:nowrap}
+.filter{background:var(--card);border:1px solid var(--hairline);border-radius:4px;
+  padding:6px 12px;color:var(--text-2)}
+
+/* ============ 分区丝带 ============ */
+.ribbon{display:flex;justify-content:center;margin:20px 0 12px}
+.ribbon span{background:var(--card);box-shadow:0 2px 10px rgba(29,33,41,.06);
+  border-radius:999px;padding:8px 48px;font-size:16px;font-weight:700;
+  letter-spacing:.5em;text-indent:.5em;color:var(--text-1)}
+.linkage-hint{text-align:center;color:var(--down);font-size:12px;margin:-4px 0 10px}
+
+/* ============ 网格与卡片 ============ */
+.row{display:grid;gap:12px;margin-bottom:12px}
+.cols-2{grid-template-columns:1fr 1fr}.cols-3{grid-template-columns:1fr 1fr 1fr}
+.cols-4{grid-template-columns:repeat(4,1fr)}.cols-23{grid-template-columns:2fr 1fr}
+.card{background:var(--card);border:1px solid var(--hairline);border-radius:8px;
+  padding:16px;box-shadow:0 1px 4px rgba(29,33,41,.04)}
+.card-title{text-align:center;font-size:16px;font-weight:600;color:var(--text-1);margin-bottom:12px}
+.chart{width:100%;height:260px}
+.chart-lg{height:320px}
+
+/* ============ KPI ============ */
+.kpi{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.kpi .label{font-size:12px;color:var(--text-3)}
+.kpi .value{font-size:34px;font-weight:700;color:var(--text-1);line-height:1.1}
+.delta{font-size:12px;font-weight:600}
+.delta.up{color:var(--up)}.delta.down{color:var(--down)}
+.delta .dim{color:var(--text-3);font-weight:400;margin-left:4px}
+
+/* ============ 进度环面板 ============ */
+.ring-panel{display:flex;align-items:center;gap:8px}
+.ring{width:150px;height:150px;flex:none}
+.metric-rows{flex:1;display:flex;flex-direction:column;gap:8px}
+.metric-row{display:flex;justify-content:space-between;font-size:12px}
+.metric-row .k{color:var(--text-3)}
+.metric-row .v{font-weight:600;color:var(--text-1)}
+.metric-row .v.warn{color:var(--down)} .metric-row .v.main{color:var(--primary)}
+
+/* ============ 目标进度条组 + 时间进度虚线 ============ */
+.progress-group{position:relative;display:flex;flex-direction:column;gap:14px;padding-top:20px}
+.time-marker{position:absolute;top:0;bottom:0;border-left:2px dashed var(--time-marker);opacity:.9}
+.time-marker em{position:absolute;top:-2px;left:6px;font-style:normal;font-size:11px;color:var(--time-marker);white-space:nowrap}
+.progress-row{display:flex;align-items:center;gap:10px}
+.progress-row .name{width:88px;text-align:right;color:var(--text-2);flex:none}
+.progress-row .track{flex:1;height:14px;background:var(--grid-line);border-radius:7px;position:relative}
+.progress-row .bar{height:100%;border-radius:7px;background:linear-gradient(90deg,var(--primary-soft),var(--primary));
+  display:flex;align-items:center;justify-content:flex-end;color:#fff;font-size:10px;padding-right:6px;min-width:24px}
+.progress-row.year .bar{background:linear-gradient(90deg,var(--accent-warm-soft),var(--accent-warm))}
+.progress-row .meta{width:110px;flex:none;font-size:11px;color:var(--text-3);line-height:1.5}
+.progress-row .meta b{color:var(--text-1);font-weight:600}
+.progress-row .meta .gap{color:var(--down)}
+
+/* ============ 表格 ============ */
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:var(--tint);color:var(--text-2);font-weight:600;padding:10px 12px;text-align:left}
+td{padding:10px 12px;border-bottom:1px solid var(--grid-line);color:var(--text-2)}
+td.num,th.num{text-align:right}
+tbody tr:nth-child(even){background:#FAFBFC}
+tr.total td{background:var(--tint);font-weight:600;color:var(--text-1)}
+td .up{color:var(--up);font-weight:600} td .down{color:var(--down);font-weight:600}
+
+/* ============ 主题切换演示条(交付时可删) ============ */
+.theme-bar{display:flex;gap:8px;justify-content:center;margin-bottom:12px}
+.theme-bar button{border:1px solid var(--hairline);background:var(--card);border-radius:999px;
+  padding:5px 16px;cursor:pointer;font-family:var(--font);color:var(--text-2)}
+.theme-bar button.active{background:var(--primary);border-color:var(--primary);color:#fff}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="theme-bar">
+    <button data-t="blue" class="active">商务蓝</button><button data-t="teal">医养青绿</button>
+    <button data-t="navy">藏蓝薰衣草</button><button data-t="pop">POP</button>
+  </div>
+
+  <!-- 页头 -->
+  <header class="page-header">
+    <div class="logo">◈ 企业 LOGO</div>
+    <div class="title-pill"><div class="pill">经营业绩驾驶舱</div></div>
+    <div class="header-filters"><span class="filter">日期 2026-07-06 ▾</span></div>
+  </header>
+
+  <!-- ① KPI 带 -->
+  <div class="row cols-4">
+    <div class="card kpi"><span class="label">今日业绩总计(万)</span><span class="value">1,746</span>
+      <span class="delta up">↑ 12.4%<span class="dim">同比</span></span></div>
+    <div class="card kpi"><span class="label">本月累计业绩(万)</span><span class="value">2,474</span>
+      <span class="delta up">↑ 57.0%<span class="dim">同比</span></span></div>
+    <div class="card kpi"><span class="label">本年累计业绩(万)</span><span class="value">51,702</span>
+      <span class="delta up">↑ 8.0%<span class="dim">同比</span></span></div>
+    <div class="card kpi"><span class="label">万元人均产值</span><span class="value">3.82</span>
+      <span class="delta down">↓ 3.0%<span class="dim">同比</span></span></div>
+  </div>
+
+  <!-- ② 目标达成区:月环 + 年环 -->
+  <div class="row cols-2">
+    <div class="card"><div class="card-title">集团月业绩及目标达成情况(万)</div>
+      <div class="ring-panel">
+        <div id="ringMonth" class="ring"></div>
+        <div class="kpi" style="flex:none;min-width:120px"><span class="label">月业绩</span><span class="value">2,474</span></div>
+        <div class="metric-rows">
+          <div class="metric-row"><span class="k">月目标</span><span class="v">8,629</span></div>
+          <div class="metric-row"><span class="k">业绩差额</span><span class="v warn">6,155</span></div>
+          <div class="metric-row"><span class="k">业绩达成率</span><span class="v main">29%</span></div>
+          <div class="metric-row"><span class="k">时间进度</span><span class="v warn">19%</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="card"><div class="card-title">集团年业绩及目标达成情况(万)</div>
+      <div class="ring-panel">
+        <div id="ringYear" class="ring"></div>
+        <div class="kpi" style="flex:none;min-width:120px"><span class="label">年业绩</span><span class="value">51,702</span></div>
+        <div class="metric-rows">
+          <div class="metric-row"><span class="k">年目标</span><span class="v">132,569</span></div>
+          <div class="metric-row"><span class="k">业绩差额</span><span class="v warn">80,867</span></div>
+          <div class="metric-row"><span class="k">业绩达成率</span><span class="v main">39%</span></div>
+          <div class="metric-row"><span class="k">时间进度</span><span class="v warn">51%</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ③ 签名组合图 -->
+  <div class="row">
+    <div class="card"><div class="card-title">集团业绩月趋势及目标达成(万)</div>
+      <div id="combo" class="chart chart-lg"></div></div>
+  </div>
+
+  <!-- ④ 目标进度条组(时间进度虚线) -->
+  <div class="row cols-2">
+    <div class="card"><div class="card-title">各业务线月业绩达成(万)</div>
+      <div class="progress-group" id="pgMonth"></div></div>
+    <div class="card"><div class="card-title">各业务线年业绩达成(万)</div>
+      <div class="progress-group year" id="pgYear"></div></div>
+  </div>
+
+  <!-- 分区丝带 -->
+  <div class="ribbon"><span>业绩构成分析</span></div>
+  <div class="linkage-hint">【下方数据点击即可相互联动】</div>
+
+  <!-- ⑤ 构成章 -->
+  <div class="row cols-3">
+    <div class="card"><div class="card-title">渠道业绩分布(万)</div><div id="donut" class="chart"></div></div>
+    <div class="card"><div class="card-title">近30日业绩趋势(万)</div><div id="area" class="chart"></div></div>
+    <div class="card"><div class="card-title">大区业绩排名 TOP5(万)</div><div id="rank" class="chart"></div></div>
+  </div>
+
+  <!-- ⑥ 明细表 -->
+  <div class="row">
+    <div class="card"><div class="card-title">业务线经营明细</div>
+      <table>
+        <thead><tr><th>业务线</th><th class="num">业绩(万)</th><th class="num">目标(万)</th>
+          <th class="num">达成率</th><th class="num">同比</th><th class="num">客单价(元)</th></tr></thead>
+        <tbody>
+          <tr><td>华东业务中心</td><td class="num">3,053</td><td class="num">4,200</td><td class="num">72.7%</td><td class="num"><span class="up">↑ 33%</span></td><td class="num">8,425</td></tr>
+          <tr><td>华北业务中心</td><td class="num">2,040</td><td class="num">3,100</td><td class="num">65.8%</td><td class="num"><span class="up">↑ 12%</span></td><td class="num">7,960</td></tr>
+          <tr><td>华南业务中心</td><td class="num">1,255</td><td class="num">2,400</td><td class="num">52.3%</td><td class="num"><span class="down">↓ 9%</span></td><td class="num">6,340</td></tr>
+          <tr><td>西南业务中心</td><td class="num">631</td><td class="num">1,500</td><td class="num">42.1%</td><td class="num"><span class="up">↑ 5%</span></td><td class="num">5,872</td></tr>
+          <tr class="total"><td>合计</td><td class="num">6,979</td><td class="num">11,200</td><td class="num">62.3%</td><td class="num"><span class="up">↑ 15%</span></td><td class="num">7,405</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============ 工具:读取当前主题 CSS 变量 ============ */
+const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const vGrad = (c1,c2)=>({type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:c1},{offset:1,color:c2}]});
+const hGrad = (c1,c2)=>({type:'linear',x:0,y:0,x2:1,y2:0,colorStops:[{offset:0,color:c1},{offset:1,color:c2}]});
+const AXIS = ()=>({axisTick:{show:false},axisLine:{lineStyle:{color:'#E5E6EB'}},axisLabel:{fontSize:11,color:cssVar('--text-3')}});
+const TOOLTIP = {backgroundColor:'#fff',borderColor:'#E9EDF3',borderWidth:1,textStyle:{color:'#1D2129',fontSize:12},
+  extraCssText:'box-shadow:0 4px 12px rgba(29,33,41,.08);border-radius:6px;'};
+const charts = {};
+const make = id => charts[id] = charts[id] || echarts.init(document.getElementById(id));
+
+/* ============ 进度环 ============ */
+function ringOption(pct, color){
+  return {series:[{type:'gauge',startAngle:90,endAngle:-270,radius:'95%',
+    pointer:{show:false},progress:{show:true,roundCap:true,width:10,
+      itemStyle:{color}},axisLine:{lineStyle:{width:10,color:[[1,'#EEF1F6']]}},
+    axisTick:{show:false},splitLine:{show:false},axisLabel:{show:false},
+    detail:{fontSize:20,fontWeight:700,color:cssVar('--text-1'),offsetCenter:[0,0],formatter:'{value}%'},
+    data:[{value:pct}]}]};
+}
+
+/* ============ 签名:目标达成组合图 ============ */
+function comboOption(){
+  const cats=['25-08','25-09','25-10','25-11','25-12','26-01','26-02','26-03','26-04','26-05','26-06','26-07'];
+  const last=[6961,7879,6648,8613,25827,5313,5668,9539,8692,7576,9948,964];
+  const cur =[8330,9699,7763,10871,21551,8521,3698,9807,11452,6495,9109,2474];
+  const tgt =[11484,13337,13913,14784,8919,7924,4698,9907,9982,10089,12560,8629];
+  const rate=cur.map((v,i)=>Math.round(v/tgt[i]*100));
+  const yoy =cur.map((v,i)=>Math.round((v/last[i]-1)*100));
+  const P=cssVar('--primary'),PS=cssVar('--primary-soft');
+  return {tooltip:{...TOOLTIP,trigger:'axis',axisPointer:{type:'shadow'}},
+    legend:{top:0,itemWidth:8,itemHeight:8,textStyle:{fontSize:10,color:cssVar('--text-3')}},
+    grid:{top:120,left:8,right:8,bottom:4,containLabel:true},
+    xAxis:{type:'category',data:cats,...AXIS()},
+    yAxis:[{type:'value',show:false,max:v=>v.max*1.18},
+           {type:'value',show:false,min:-60,max:900}],
+    series:[
+      {name:'去年月业绩',type:'bar',data:last,barMaxWidth:14,itemStyle:{color:vGrad('#9CA3AF','#D6DAE1'),borderRadius:[3,3,0,0]},
+        label:{show:true,position:'top',fontSize:9,color:'#9CA3AF'}},
+      {name:'月业绩',type:'bar',data:cur,barMaxWidth:14,itemStyle:{color:vGrad(P,PS),borderRadius:[3,3,0,0]},
+        label:{show:true,position:'top',fontSize:9,color:P,fontWeight:600}},
+      {name:'月目标',type:'bar',data:tgt,barMaxWidth:14,itemStyle:{color:vGrad('#F08A7E','#F5B1A8'),borderRadius:[3,3,0,0]},
+        label:{show:true,position:'top',fontSize:9,color:'#F08A7E'}},
+      {name:'月达成率',type:'line',yAxisIndex:1,data:rate,symbol:'circle',symbolSize:4,
+        lineStyle:{color:'#E64C45',width:2},itemStyle:{color:'#E64C45'},
+        label:{show:true,position:'top',fontSize:9,color:'#E64C45',formatter:'{c}%'}},
+      {name:'月同比',type:'line',yAxisIndex:1,data:yoy.map(v=>v+520),symbol:'circle',symbolSize:4,
+        lineStyle:{color:'#6B7280',width:2},itemStyle:{color:'#6B7280'},
+        label:{show:true,position:'top',fontSize:9,color:'#6B7280',formatter:p=>(p.value-520)+'%'}}
+    ]};
+}
+
+/* ============ 环图 / 面积 / 排名 ============ */
+function donutOption(){
+  const P=cssVar('--primary');
+  const palette=[P,'#52B78A','#F5A54A','#8D6BE8','#F27E9D','#38B4E0'];
+  return {color:palette,tooltip:{...TOOLTIP,trigger:'item'},
+    series:[{type:'pie',radius:['58%','78%'],center:['50%','52%'],
+      label:{fontSize:11,formatter:'{b}\n{c} ({d}%)'},labelLine:{length:12,length2:8},
+      data:[{name:'代理人',value:1027},{name:'机构',value:620},{name:'直营',value:410},
+            {name:'电商',value:236},{name:'散单',value:118}]}]};
+}
+function areaOption(){
+  const P=cssVar('--primary');
+  const days=Array.from({length:30},(_,i)=>`6-${i+1}`);
+  const vals=[52,61,55,72,68,80,74,63,70,88,95,83,77,90,102,96,84,79,93,108,99,87,94,112,105,91,98,118,109,124];
+  return {tooltip:{...TOOLTIP,trigger:'axis'},grid:{top:28,left:8,right:8,bottom:4,containLabel:true},
+    xAxis:{type:'category',data:days,...AXIS(),boundaryGap:false,axisLabel:{fontSize:10,color:cssVar('--text-3'),interval:4}},
+    yAxis:{type:'value',axisLine:{show:false},axisTick:{show:false},
+      splitLine:{lineStyle:{color:'#EEF1F6'}},axisLabel:{fontSize:10,color:cssVar('--text-3')}},
+    series:[{type:'line',data:vals,smooth:true,symbol:'circle',symbolSize:3,
+      lineStyle:{color:P,width:2},itemStyle:{color:P},
+      areaStyle:{color:vGrad(hexA(P,.22),hexA(P,0))},
+      label:{show:false}}]};
+}
+function rankOption(){
+  const P=cssVar('--primary'),PS=cssVar('--primary-soft');
+  const names=['西南业务中心','华中业务中心','华南业务中心','华北业务中心','华东业务中心'];
+  const vals=[631,842,1255,2040,3053];
+  return {tooltip:{...TOOLTIP},grid:{top:8,left:8,right:48,bottom:4,containLabel:true},
+    xAxis:{type:'value',show:false},
+    yAxis:{type:'category',data:names,axisTick:{show:false},axisLine:{show:false},
+      axisLabel:{fontSize:11,color:cssVar('--text-2'),
+        formatter:n=>n.length>8?n.slice(0,8)+'…':n}},
+    series:[{type:'bar',data:vals,barMaxWidth:12,
+      itemStyle:{color:hGrad(PS,P),borderRadius:6},
+      label:{show:true,position:'right',fontSize:11,color:P,fontWeight:600}}]};
+}
+/* 颜色透明度工具 */
+function hexA(hex,a){const h=hex.replace('#','');const n=parseInt(h,16);
+  return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`;}
+
+/* ============ 目标进度条组 ============ */
+function renderProgress(elId, rows, timePct){
+  const el=document.getElementById(elId);
+  el.innerHTML=`<div class="time-marker" style="left:calc(88px + (100% - 88px - 110px - 20px) * ${timePct/100})">
+    <em>时间进度:${timePct}%</em></div>`+
+    rows.map(r=>`<div class="progress-row ${elId==='pgYear'?'year':''}">
+      <span class="name">${r.name}</span>
+      <div class="track"><div class="bar" style="width:${Math.min(r.pct,100)}%">${r.pct}%</div></div>
+      <div class="meta"><b>目标:${r.target.toLocaleString()}</b><br><span class="gap">差额:${r.gap.toLocaleString()}</span></div>
+    </div>`).join('');
+}
+const monthRows=[
+  {name:'华东业务中心',pct:31,target:679,gap:465},{name:'华北业务中心',pct:39,target:367,gap:224},
+  {name:'华南业务中心',pct:16,target:2697,gap:2271},{name:'西南业务中心',pct:10,target:794,gap:717},
+  {name:'华中业务中心',pct:64,target:388,gap:140}];
+const yearRows=[
+  {name:'华东业务中心',pct:68,target:9420,gap:2974},{name:'华北业务中心',pct:50,target:27094,gap:13516},
+  {name:'华南业务中心',pct:40,target:14277,gap:8603},{name:'西南业务中心',pct:35,target:36000,gap:23377},
+  {name:'华中业务中心',pct:19,target:15109,gap:12208}];
+
+/* ============ 渲染与主题切换 ============ */
+function renderAll(){
+  make('ringMonth').setOption(ringOption(29,cssVar('--primary')));
+  make('ringYear').setOption(ringOption(39,cssVar('--accent-warm')));
+  make('combo').setOption(comboOption());
+  make('donut').setOption(donutOption());
+  make('area').setOption(areaOption());
+  make('rank').setOption(rankOption());
+  renderProgress('pgMonth',monthRows,19);
+  renderProgress('pgYear',yearRows,51);
+}
+document.querySelectorAll('.theme-bar button').forEach(b=>b.addEventListener('click',()=>{
+  document.documentElement.setAttribute('data-theme',b.dataset.t);
+  document.querySelectorAll('.theme-bar button').forEach(x=>x.classList.toggle('active',x===b));
+  renderAll();
+}));
+window.addEventListener('resize',()=>Object.values(charts).forEach(c=>c.resize()));
+renderAll(); /* build v1.1 */
+</script>
+</body>
+</html>
