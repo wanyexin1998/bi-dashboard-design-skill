@@ -202,6 +202,8 @@ td .up{color:var(--up);font-weight:600} td .down{color:var(--down);font-weight:6
 </div>
 
 <script>
+/* 数据规则(实战):所有看板数据先集中为单一 DATA 对象;达成率/差额/占比/合计等派生指标一律公式计算,
+   禁止手填;同一指标被多张卡引用必须同源。本模板为组件演示,数据分散于各构建函数,请勿模仿这一点。*/
 /* ============ 工具:读取当前主题 CSS 变量 ============ */
 const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const vGrad = (c1,c2)=>({type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:c1},{offset:1,color:c2}]});
@@ -330,7 +332,61 @@ document.querySelectorAll('.theme-bar button').forEach(b=>b.addEventListener('cl
   renderAll();
 }));
 window.addEventListener('resize',()=>Object.values(charts).forEach(c=>c.resize()));
-renderAll(); /* build v1.1 */
+renderAll(); /* build v1.2 */
+
+/* ============ QA 自检(URL 加 ?qa=1 开启):几何级溢出/错乱检测 ============ */
+function runQA(){
+  const issues=[];
+  const flag=(el,msg)=>{ if(el&&el.style){el.style.outline='2px dashed #E64C45';el.style.outlineOffset='-1px';} issues.push(msg); };
+  const de=document.documentElement;
+  if(de.scrollWidth>de.clientWidth+1) issues.push('页面横向溢出: 内容 '+de.scrollWidth+'px > 视口 '+de.clientWidth+'px');
+  document.querySelectorAll('.row').forEach((row,i)=>{
+    const cards=[...row.children].filter(c=>c.classList.contains('card'));
+    if(cards.length>1){
+      const hs=cards.map(c=>Math.round(c.getBoundingClientRect().height));
+      if(Math.max(...hs)-Math.min(...hs)>2) flag(row,'第'+(i+1)+'行卡片不等高: '+hs.join('/')+'px');
+    }
+  });
+  document.querySelectorAll('.card').forEach(card=>{
+    const cb=card.getBoundingClientRect();
+    const title=(card.querySelector('.card-title')||{textContent:'未命名卡'}).textContent.trim();
+    [...card.querySelectorAll('*')].some(el=>{
+      if(el.offsetParent===null) return false;
+      const r=el.getBoundingClientRect();
+      if(r.width&&r.height&&(r.right>cb.right+2||r.left<cb.left-2||r.bottom>cb.bottom+2||r.top<cb.top-2)){
+        flag(card,'「'+title+'」内有 DOM 元素溢出卡片'); return true; }
+      return false; });
+  });
+  document.querySelectorAll('.chart').forEach(c=>{ if(c.clientHeight<50) flag(c,'图表容器高度异常(<50px): '+c.id); });
+  Object.entries(charts).forEach(([id,ch])=>{
+    try{
+      const w=ch.getWidth(),h=ch.getHeight(); let n=0;
+      ch.getZr().storage.getDisplayList().forEach(el=>{
+        if(!el.style||el.style.text==null||el.style.text==='') return;
+        const b=el.getBoundingRect().clone(); b.applyTransform(el.getComputedTransform());
+        if(b.x<-3||b.y<-3||b.x+b.width>w+3||b.y+b.height>h+3) n++;
+      });
+      if(n) flag(document.getElementById(id),'图表 '+id+' 有 '+n+' 个文本标签越出画布(会被裁切)');
+    }catch(e){}
+  });
+  [...document.querySelectorAll('body *')].forEach(el=>{
+    if(el.children.length===0&&el.textContent.trim()&&el.offsetParent!==null){
+      const fs=parseFloat(getComputedStyle(el).fontSize);
+      if(fs&&fs<9) flag(el,'存在 <9px 文字: '+el.textContent.trim().slice(0,12));
+    }
+  });
+  const panel=document.createElement('div');
+  panel.style.cssText='position:fixed;right:12px;bottom:12px;z-index:9999;max-width:380px;max-height:50vh;overflow:auto;background:#fff;border:1px solid #E9EDF3;border-radius:8px;box-shadow:0 6px 24px rgba(29,33,41,.18);padding:12px 14px;font-size:12px;line-height:1.8;font-family:var(--font)';
+  panel.innerHTML='<b style="font-size:13px;color:#1D2129">QA 自检报告</b><br>'+(issues.length
+    ?issues.map(s=>'<span style="color:#E64C45">✗ '+s+'</span>').join('<br>')
+    :'<span style="color:#18A058">✓ 全部通过:无横向溢出、无卡片参差、无标签越界、无异常字号</span>');
+  document.body.appendChild(panel);
+  console.log('[QA]',issues.length?issues:'PASS');
+  return issues;
+}
+if(typeof location!=='undefined'&&new URLSearchParams(location.search).has('qa'))
+  window.addEventListener('load',()=>setTimeout(runQA,900));
+
 </script>
 </body>
 </html>

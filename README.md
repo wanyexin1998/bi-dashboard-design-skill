@@ -2,7 +2,7 @@
 
 <p>
   <img src="https://img.shields.io/badge/Claude-Agent%20Skill-D97757?style=flat-square" alt="Claude Agent Skill">
-  <img src="https://img.shields.io/badge/version-1.1-3370EB?style=flat-square" alt="version">
+  <img src="https://img.shields.io/badge/version-1.2-3370EB?style=flat-square" alt="version">
   <img src="https://img.shields.io/badge/license-MIT-21968F?style=flat-square" alt="license">
   <img src="https://img.shields.io/badge/lang-%E4%B8%AD%E6%96%87-E8188C?style=flat-square" alt="lang">
 </p>
@@ -22,7 +22,7 @@
 | **HTML 模式** | 要成品、原型、演示 | 单文件 HTML + ECharts 可交互看板，视觉 100% 按 DNA 渲染 |
 | **规范模式** | 要在 Quick BI / FineBI 等工具里搭 | 逐卡片的设计规范文档（分区骨架、图表选型、精确色值、字号），照着配置即可 |
 
-核心能力：四套预设主题 + 用户品牌色自定义推导（用户需求永远优先）、行型库排版逻辑（一行放几个查表即用）、目标管理四件套（目标/达成/差距/时间进度虚线）、图表溢出与错乱的双层质检。
+核心能力：四套预设主题 + 用户品牌色自定义推导（用户需求永远优先）、行型库排版逻辑（一行放几个查表即用）、目标管理四件套（目标/达成/差距/时间进度虚线）、图表溢出与错乱的双层质检——HTML 产物内置 `?qa=1` 几何自检,打开页面即自动标红溢出/参差/越界并出报告。
 
 ## 🎨 主题速览
 
