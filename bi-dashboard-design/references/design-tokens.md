@@ -67,6 +67,7 @@
 - `--primary-soft` = 主色与白 30:70 混合(渐变浅端)
 - `--secondary` = 主色的邻近色(色相 ±30°)或用户给的第二色
 - `--accent-warm` = 与主色互补的暖色(橙/琥珀系),用于年维度与第二强调
+- `--accent-warm-soft` = 暖色与白 30:70 混合(年维度柱/进度条的渐变浅端)
 - `--tint` = 主色 8–12% 不透明度铺在白上(表头/选中态)
 - 中性色、语义色(涨跌/目标/达成率红)**不随主题变**——除非用户明确要求
 - 深色背景需求:画布可换深色(如 `#0E1526`),此时卡片用 `#161F33`、文字反白、hairline 换 `rgba(255,255,255,.08)`,但组件结构、图表语言、语义色逻辑全部保留
@@ -80,10 +81,10 @@
 | `--down` | `#E64C45` | 负向变化:下跌、缺口、风险、支出 |
 | `--rate-line` | `#E64C45` | 达成率折线(签名元素) |
 | `--time-marker` | `#E64C45` | 时间进度虚线标记(dashed) |
-| `--target-bar-1` | `#F5B1A8` | 目标柱渐变浅端(珊瑚) |
-| `--target-bar-2` | `#F08A7E` | 目标柱渐变深端 |
-| `--last-year-1` | `#D6DAE1` | 去年/基期柱渐变浅端(灰) |
-| `--last-year-2` | `#9CA3AF` | 去年/基期柱渐变深端 |
+| `--target-1` | `#F5B1A8` | 目标柱渐变浅端(珊瑚) |
+| `--target-2` | `#F08A7E` | 目标柱渐变深端 |
+| `--lastyear-1` | `#D6DAE1` | 去年/基期柱渐变浅端(灰) |
+| `--lastyear-2` | `#9CA3AF` | 去年/基期柱渐变深端 |
 | `--yoy-line` | `#6B7280` | 同比折线(深灰) |
 
 **涨跌标准:绿=向好,红=向差**(常规指标:↑绿 #18A058 / ↓红 #E64C45)。**逆向指标**(流失率、爽约率、投诉量、退货率等越低越好)按业务向好着色——下降标绿、上升标红;箭头 ↑↓ 永远指示数值方向,颜色表达好坏。历史作品存在红涨绿跌版本,新看板一律采用本标准,同一看板内绝不混用。红色在本体系身兼三职:目标系列、达成率线、负向变化——它们语义相通(都指向"差距与压力"),这是刻意设计。
@@ -108,8 +109,8 @@
 | 竖向柱 | 180°:顶部 `--primary` → 底部 `--primary-soft`(饱和在上,视觉重心托起数值标签) |
 | 横向条 | 90°:左 `--primary-soft` → 右 `--primary`(深端指向数值端点) |
 | 面积图 | 线用 `--primary`,填充 180°:`--primary` 22% 不透明 → 0% 透明 |
-| 目标柱 | 180°:`--target-bar-2` → `--target-bar-1` |
-| 去年柱 | 180°:`--last-year-2` → `--last-year-1` |
+| 目标柱 | 180°:`--target-2` → `--target-1` |
+| 去年柱 | 180°:`--lastyear-2` → `--lastyear-1` |
 | 页头横幅(可选) | 135°:主色深端 → 主色亮端,叠加六边形纹理或细光斑 |
 
 ## 6. 字体
@@ -152,8 +153,12 @@
   --lastyear-1:#D6DAE1; --lastyear-2:#9CA3AF; --yoy-line:#6B7280;
   --font:"PingFang SC","Microsoft YaHei","HarmonyOS Sans SC",system-ui,sans-serif;
 }
-[data-theme="blue"]{ --primary:#3370EB; --primary-soft:#B9D3FA; --secondary:#A5B8E8; --accent-warm:#F59A3C; --tint:#EAF2FB; }
-[data-theme="teal"]{ --primary:#21968F; --primary-soft:#A6DCC3; --secondary:#52B78A; --accent-warm:#F5A54A; --tint:#E6F4F2; }
-[data-theme="navy"]{ --primary:#2E4180; --primary-soft:#B4C2EE; --secondary:#5B7CE6; --accent-warm:#F2A8A0; --tint:#ECEFF9; }
-[data-theme="pop"] { --primary:#E8188C; --primary-soft:#F9BBDD; --secondary:#00AEEF; --accent-warm:#FFC53D; --tint:#FDEEF6; }
+[data-theme="blue"]{ --primary:#3370EB; --primary-soft:#B9D3FA; --secondary:#A5B8E8; --accent-warm:#F59A3C; --accent-warm-soft:#FBD3A2; --tint:#EAF2FB; }
+[data-theme="teal"]{ --primary:#21968F; --primary-soft:#A6DCC3; --secondary:#52B78A; --accent-warm:#F5A54A; --accent-warm-soft:#FBDDB4; --tint:#E6F4F2; }
+[data-theme="navy"]{ --primary:#2E4180; --primary-soft:#B4C2EE; --secondary:#5B7CE6; --accent-warm:#F2A8A0; --accent-warm-soft:#FBDCD8; --tint:#ECEFF9; }
+[data-theme="pop"] { --primary:#E8188C; --primary-soft:#F9BBDD; --secondary:#00AEEF; --accent-warm:#FFC53D; --accent-warm-soft:#FFE8B0; --tint:#FDEEF6; }
+/* 自定义主题:用户有品牌色/背景需求时按 §2.5 推导,复制此行填值即可
+[data-theme="custom"]{ --primary:?; --primary-soft:主色30:70混白; --secondary:邻近色; --accent-warm:互补暖色; --accent-warm-soft:暖色浅端; --tint:主色10%铺白; } */
 ```
+
+> `--accent-warm-soft` 是点缀暖色的浅端(年维度柱/进度条渐变用,如年度进度条 `linear-gradient(90deg,--accent-warm-soft,--accent-warm)`)。本块与 `assets/starter-template.html` 的 `<style>` 逐值同源;改任一处都要同步另一处,可用 `scripts/check_sync.py` 校验。

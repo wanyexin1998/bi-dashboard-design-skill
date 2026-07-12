@@ -21,7 +21,7 @@
 - 留白:`grid:{top:36,right:16,bottom:28,left:16,containLabel:true}`。
 - 动效:初次渲染 500ms 缓动即可,不做循环动画。
 - tooltip:白底、`--hairline` 描边、圆角 6px、小阴影;`axisPointer:'shadow'`。
-- **防溢出七条**(详见 layouts.md §6,写配置时同步落实):①`containLabel:true`;②柱顶标签留头 `yAxis.max:v=>v.max*1.15+`;③横向条 `grid.right≥48`;④长类目名 formatter 截断;⑤窄卡环图禁引出标签改图例;⑥大数值换「万/亿」;⑦容器固定高度+`resize` 监听。
+- **防溢出七条**(权威清单与阈值在 layouts.md §6;此处是写 ECharts 配置时的速记):①`containLabel:true`;②柱顶标签留头 `yAxis.max:v=>v.max*1.15+`;③横向条 `grid.right≥48`;④长类目名 formatter 截断;⑤窄卡环图禁引出标签改图例;⑥大数值换「万/亿」;⑦容器固定高度+`resize` 监听。
 
 ## 2. 系列颜色语义(恒定约定,跨看板不变)
 
@@ -41,38 +41,46 @@
 
 ## 3. 签名图型:目标达成组合图
 
-一张图讲完「去年—今年—目标—达成率—同比」。布局特征:**柱群贴地,双折线悬浮于上方独立空域**,上下不打架。实现:折线走第二 y 轴,并把第二轴 `min` 设为负值把线抬高。
+一张图讲完「去年—今年—目标—达成率—同比」。布局特征:**柱群贴地,双折线悬浮于上方独立空域**,上下不打架。实现:柱与两条率线各绑一条独立 y 轴;率线的轴范围**按数据自身值域反推**(而非写死偏移),把线锁进指定的纵向带,任何量级的数据都不会错层或压柱。
 
 ```js
+// 把某序列压进绘图区的一条纵向带 [f0,f1](0=底 1=顶),按该序列自身值域反推轴 min/max。
+// 关键:不用 +offset 魔法数,换任何量级的数据(百分率/小数/极端值)两条率线都稳定分层、悬浮于柱上。
+function bandAxis(arr, f0, f1){
+  const dmin=Math.min(...arr), dmax=Math.max(...arr);
+  const span=(dmax-dmin)||Math.abs(dmax)||1;        // 单值/全零兜底,避免除零
+  const range=span/(f1-f0), min=dmin-f0*range;
+  return {type:'value', show:false, min, max:min+range};
+}
 function targetComboOption(cats, lastYear, current, target, rate, yoy, theme){
   const g=(c1,c2)=>({type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:c1},{offset:1,color:c2}]});
   return {
-    color:['#B4BAC4', theme.primary, '#F08A7E'],
     legend:{top:0,itemWidth:8,itemHeight:8,textStyle:{fontSize:10,color:'#86909C'}},
     grid:{top:110,left:8,right:8,bottom:24,containLabel:true},
     xAxis:{type:'category',data:cats,axisTick:{show:false},
       axisLine:{lineStyle:{color:'#E5E6EB'}},axisLabel:{fontSize:11,color:'#86909C'}},
     yAxis:[
-      {type:'value',show:false},
-      {type:'value',show:false,min:v=>-v.max*0.15,max:v=>v.max*3.2} // 抬升折线空域
+      {type:'value',show:false,min:0,max:v=>v.max*2}, // 柱轴:柱群只占底部约一半,给上方两条率线让出空域
+      bandAxis(rate, 0.58, 0.76),                     // 达成率线带
+      bandAxis(yoy,  0.84, 0.98)                      // 同比线带(更靠上,与达成率分层)
     ],
     series:[
-      {name:'去年',type:'bar',data:lastYear,barMaxWidth:16,itemStyle:{color:g('#9CA3AF','#D6DAE1'),borderRadius:[3,3,0,0]},
+      {name:'去年',type:'bar',yAxisIndex:0,data:lastYear,barMaxWidth:16,itemStyle:{color:g('#9CA3AF','#D6DAE1'),borderRadius:[3,3,0,0]},
        label:{show:true,position:'top',fontSize:10,color:'#9CA3AF'}},
-      {name:'当期',type:'bar',data:current,barMaxWidth:16,itemStyle:{color:g(theme.primary,theme.primarySoft),borderRadius:[3,3,0,0]},
+      {name:'当期',type:'bar',yAxisIndex:0,data:current,barMaxWidth:16,itemStyle:{color:g(theme.primary,theme.primarySoft),borderRadius:[3,3,0,0]},
        label:{show:true,position:'top',fontSize:10,color:theme.primary,fontWeight:600}},
-      {name:'目标',type:'bar',data:target,barMaxWidth:16,itemStyle:{color:g('#F08A7E','#F5B1A8'),borderRadius:[3,3,0,0]},
+      {name:'目标',type:'bar',yAxisIndex:0,data:target,barMaxWidth:16,itemStyle:{color:g('#F08A7E','#F5B1A8'),borderRadius:[3,3,0,0]},
        label:{show:true,position:'top',fontSize:10,color:'#F08A7E'}},
       {name:'达成率',type:'line',yAxisIndex:1,data:rate,symbol:'circle',symbolSize:5,
        lineStyle:{color:'#E64C45',width:2},itemStyle:{color:'#E64C45'},
        label:{show:true,position:'top',fontSize:10,color:'#E64C45',formatter:'{c}%'}},
-      {name:'同比',type:'line',yAxisIndex:1,data:yoy.map(v=>v+150),symbol:'circle',symbolSize:5, // +offset 再抬一层
+      {name:'同比',type:'line',yAxisIndex:2,data:yoy,symbol:'circle',symbolSize:5,
        lineStyle:{color:'#6B7280',width:2},itemStyle:{color:'#6B7280'},
-       label:{show:true,position:'top',fontSize:10,color:'#6B7280',formatter:(p)=>(p.value-150)+'%'}}
+       label:{show:true,position:'top',fontSize:10,color:'#6B7280',formatter:'{c}%'}}
     ]};
 }
 ```
-(同比折线的 offset 技巧:目的是让两条率线分层;也可以用三个 yAxis 分别控制。)
+**为什么按值域反推**:柱群绑轴 0(`max:v=>v.max*2`,只占底部约一半);两条率线各绑一条隐藏轴,`bandAxis()` 按各自 min/max 把线锁进固定纵向带(达成率 58–76%、同比 84–98%)。于是 `data` 直接传真实值,标签用 `{c}%`、tooltip 也显示真值——彻底去掉 `+150` 这类魔法偏移和还原逻辑。换数据只改数组,无需手调轴范围。若某指标达成率天然超 300% 或同比跨越极端负值,带内自动缩放仍成立。
 
 ## 4. 常用图型速查
 

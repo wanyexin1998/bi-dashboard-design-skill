@@ -47,10 +47,14 @@ bi-dashboard-design-skill/
 │   │   ├── components.md           # 页头/KPI/进度环/目标条/表格等组件词汇表
 │   │   └── charts.md               # 图表语言 + ECharts 配置片段
 │   ├── assets/
-│   │   └── starter-template.html   # 四主题一键切换的起步骨架（勿从零手写）
-│   └── evals/evals.json            # 测试用例
+│   │   └── starter-template.html   # 四主题起步骨架（内置 ?qa=1 几何自检；勿从零手写）
+│   ├── evals/evals.json            # 6 个测试用例（含 2 个对抗性溢出用例）
+│   └── scripts/
+│       ├── check.py                # 回归断言器（用例 0-3 静态断言；4-5 靠 ?qa=1）
+│       └── check_sync.py           # tokens ↔ 模板 逐块逐值同源校验
+├── docs/samples/                   # 签名图型四主题实机渲染样例
 ├── dist/
-│   └── bi-dashboard-design.skill   # 一键安装包（zip）
+│   └── bi-dashboard-design.skill   # 一键安装包（zip，打包 bi-dashboard-design/）
 ├── LICENSE
 └── README.md
 ```
@@ -108,12 +112,26 @@ cp -r bi-dashboard-design-skill/bi-dashboard-design .claude/skills/
 | **带 skill** | **100%**（26/26） | 正确选主题/推导品牌主题、复现签名组件、排版按行型库、溢出防线齐备 |
 | 不带 skill | 34% | 随机配色、暗黑大屏跑偏、无目标管理语义、无溢出防护 |
 
+## 📸 签名图型样例
+
+由 `assets/starter-template.html` 实机渲染的**目标达成组合图**(一张图讲完「去年—今年—目标—达成率—同比」)。三组渐变柱贴地,达成率红线与同比灰线各占一条独立空域悬浮于上——两条率线的纵向位置**按数据自身值域反推**(不用写死偏移),换任何量级的数据都稳定分层、不压柱。四主题各一张:
+
+| 主题 | 渲染 |
+|---|---|
+| `blue` 商务蓝 | ![combo-blue](docs/samples/combo-blue.png) |
+| `teal` 医养青绿 | ![combo-teal](docs/samples/combo-teal.png) |
+| `navy` 藏蓝薰衣草 | ![combo-navy](docs/samples/combo-navy.png) |
+| `pop` 洋红青黄 | ![combo-pop](docs/samples/combo-pop.png) |
+
+> 想看完整看板:本地 `python -m http.server` 起个静态服务,浏览器打开 `starter-template.html`(加 `?qa=1` 可跑内置几何自检),顶部按钮切换四主题。
+
 ## 🔧 定制
 
-- **改色/改字号**：只改 `references/design-tokens.md`（唯一事实来源），HTML 模板中的 CSS 变量与其同源。
-- **新增主题**：在 tokens §2 加一行主题定义，模板 `[data-theme]` 同步一行。
+- **改色/改字号**：只改 `references/design-tokens.md` §8（唯一事实来源），并把 `assets/starter-template.html` 的 `<style>` 同步到同值。
+- **新增主题**：在 tokens §2 加一行主题定义、§8 加一行 CSS 变量，模板 `[data-theme]` 同步一行。
 - **加组件/行型**：按现有条目格式追加到 `components.md` / `layouts.md`。
-- **回归测试**：改完用 `evals/evals.json` 的 4 个用例复测。
+- **同源校验**：改完 token 后跑 `python bi-dashboard-design/scripts/check_sync.py`——校验 §8 与模板逐值一致、且表格引用的 token 都有定义（退出码非 0 即不一致）。
+- **回归测试**：改完用 `evals/evals.json` 的 6 个用例复测（`python bi-dashboard-design/scripts/check.py <产物> <id>`；对抗溢出用例 4-5 用 `?qa=1` 几何自检验证）。
 
 ## 📜 License
 

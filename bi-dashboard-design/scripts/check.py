@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""回归断言检查。用法: python check.py <产物文件.html|.md> <用例id 0-3>
-用例 prompt 见 ../evals/evals.json。修改 skill 后,用对应用例重新生成产物并跑本脚本,全过才算没回归。"""
+"""回归断言检查。用法: python check.py <产物文件.html|.md> <用例id 0-5>
+用例 prompt 见 ../evals/evals.json。修改 skill 后,用对应用例重新生成产物并跑本脚本,全过才算没回归。
+用例 0-3 有静态断言;4-5 是对抗性溢出场景(靠 ?qa=1 几何自检验证,无静态断言)。"""
 import re, sys
 
 def build(fname, t):
@@ -60,7 +61,11 @@ if __name__ == "__main__":
         print(__doc__); sys.exit(2)
     fname, eid = sys.argv[1], int(sys.argv[2])
     t = open(fname, encoding="utf-8", errors="ignore").read()
-    checks = build(fname, t)[eid]
+    allchecks = build(fname, t)
+    if eid not in allchecks:
+        print(f"用例 {eid} 为对抗性溢出场景,无静态断言——请用 ?qa=1 几何自检验证(见 evals.json 的 expected_output)。")
+        sys.exit(0)
+    checks = allchecks[eid]
     fails = 0
     for k, v in checks.items():
         print(("PASS " if v else "FAIL "), k)
